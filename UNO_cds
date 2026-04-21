@@ -1,1 +1,42 @@
+// --- 설정 부분 (반드시 있어야 함) ---
+void setup() {
+  Serial.begin(9600); // 시리얼 모니터 통신 속도 설정
+  pinMode(A0, INPUT);  // 센서 1 핀 설정
+  pinMode(A1, INPUT);  // 센서 2 핀 설정
+}
 
+// --- 반복 실행 부분 ---
+void loop() {
+  // --- 시간 계산 ---
+  unsigned long totalSeconds = millis() / 1000;
+  int h = (totalSeconds / 3600) % 24;
+  int m = (totalSeconds / 60) % 60;
+  int s = totalSeconds % 60;
+
+  // --- 시간 포맷팅 (00:00:00sec 형식) ---
+  char timeBuffer[15]; 
+  sprintf(timeBuffer, "%02d:%02d:%02d", h, m, s);
+  
+  // 시간 출력
+  Serial.print(timeBuffer);
+  Serial.print("  |  ");
+
+  // --- 센서 데이터 읽기 ---
+  int raw1 = analogRead(A0);
+  int per1 = map(raw1, 0, 1023, 0, 100);
+  int raw2 = analogRead(A1);
+  int per2 = map(raw2, 0, 1023, 0, 100);
+
+  // --- 센서 데이터 출력 ---
+  Serial.print("CDS #1: ");
+  Serial.print(raw1);
+  Serial.print("(");
+  Serial.print(per1);
+  Serial.print("%)  |  CDS #2: ");
+  Serial.print(raw2);
+  Serial.print("(");
+  Serial.print(per2);
+  Serial.println("%)");
+
+  delay(1000); // 1초 대기
+}
