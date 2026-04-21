@@ -1,6 +1,11 @@
-/*
- * ACS758LCB-050B 전류 측정 및 경과 시간 표시 코드
- */
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED 가로 해상도
+#define SCREEN_HEIGHT 64 // OLED 세로 해상도
+#define OLED_RESET    -1 // 리셋 핀이 없는 경우 -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const int sensorPin = A0;
 const float sensitivity = 40.0;
@@ -10,10 +15,21 @@ float vcc = 5.0;
 float offsetVoltage = 2.5;
 
 void setup() {
-  Serial.begin(115200);
-  
-  // 초기 영점 조정
-  Serial.println("Calibrating sensor...");
+  Serial.begin(9600);
+
+  // OLED 초기화
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // 0x3C는 일반적인 I2C 주소
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0,0);
+  display.println("System Initializing...");
+  display.display();
+
+  // 센서 영점 조정
   long runningSum = 0;
   for (int i = 0; i < 100; i++) {
     runningSum += analogRead(sensorPin);
@@ -21,28 +37,20 @@ void setup() {
   }
   offsetVoltage = (runningSum / 100.0) * (vcc / 1024.0);
   
-  Serial.println("System Start!");
+  display.clearDisplay();
+  display.println("Ready!");
+  display.display();
+  delay(1000);
 }
 
 void loop() {
-  // 1. 경과 시간 계산 (HH:MM:SS 형식)
-unsigned long totalSeconds = millis() / 1000;
+  // 1. 시간 계산
+  unsigned long totalSeconds = millis() / 1000;
   int hours = totalSeconds / 3600;
   int minutes = (totalSeconds % 3600) / 60;
   int seconds = totalSeconds % 60;
 
-  // sprintf 대신 Serial.print로 끊어서 출력 (컴파일이 훨씬 가벼움)
-  if(hours < 10) Serial.print('0');
-  Serial.print(hours);
-  Serial.print(':');
-  if(minutes < 10) Serial.print('0');
-  Serial.print(minutes);
-  Serial.print(':');
-  if(seconds < 10) Serial.print('0');
-  Serial.print(seconds);
-  Serial.print(" sec | ");
-
-  // 3. 전류 측정 로직
+  // 2. 전류 측정
   long sensorSum = 0;
   for (int i = 0; i < samples; i++) {
     sensorSum += analogRead(sensorPin);
@@ -51,12 +59,36 @@ unsigned long totalSeconds = millis() / 1000;
   float voltage = avgADC * (vcc / 1024.0);
   float current = (voltage - offsetVoltage) / (sensitivity / 1000.0);
 
-  // 4. 결과 출력
-  Serial.print("Voltage: ");
-  Serial.print(voltage, 3);
-  Serial.print(" V | Current: ");
+  // 3. 시리얼 출력
   Serial.print(current, 2);
   Serial.println(" A");
 
-  delay(1000); // 1초 간격으로 업데이트
+  // 4. OLED 디스플레이 출력
+  display.clearDisplay();
+  
+  // 상단 시간 표시
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.print("Time: ");
+  if(hours < 10) display.print('0'); display.print(hours); display.print(':');
+  if(minutes < 10) display.print('0'); display.print(minutes); display.print(':');
+  if(seconds < 10) display.print('0'); display.print(seconds);
+
+  // 중앙 전류 값 표시 (크게)
+  display.setTextSize(2);
+  display.setCursor(0, 25);
+  display.print("I: ");
+  display.print(current, 2);
+  display.print(" A");
+
+  // 하단 전압 신호 표시
+  display.setTextSize(1);
+  display.setCursor(0, 50);
+  display.print("V_out: ");
+  display.print(voltage, 3);
+  display.print(" V");
+
+  display.display(); // 실제로 화면에 그리기
+
+  delay(500); 
 }
