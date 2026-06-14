@@ -11,6 +11,10 @@ const int OUT_N_RELAY = 39;
 
 const float REF_VOLT = 0.25; 
 
+// 각 채널의 판정 상태를 저장할 변수 (ON일 때 "[ON]", OFF일 때 "[  ]")
+String pStatus = "[  ]";
+String nStatus = "[  ]";
+
 float calculateVolt(int adcValue) {
   return (adcValue * 5.0) / 1023.0;
 }
@@ -18,17 +22,17 @@ float calculateVolt(int adcValue) {
 void setup() {
   Serial.begin(9600);
   
-  // ★ 이 부분을 가장 범용적인 초기화 코드로 수정했습니다 ★
-  lcd.init();         // 라이브러리 기본 초기화 함수 사용
-  lcd.backlight();    // 백라이트 켜기
+  // 라이브러리 기본 초기화 함수 사용
+  lcd.init();         
+  lcd.backlight();    
   
   lcd.setCursor(0, 0);
-  lcd.print("=== FA-DUINO READY ===");
+  lcd.print("=== SYSTEM READY ===");
   lcd.setCursor(0, 1);
-  lcd.print("  SYSTEM MONITORING   ");
+  lcd.print(" PN TESTER START  ");
   lcd.setCursor(0, 2);
   lcd.print("  REF VOLT: 0.25V     ");
-  delay(2000);
+  delay(2500);
   lcd.clear();
 }
 
@@ -39,21 +43,53 @@ void loop() {
   float pCdsVolt = calculateVolt(pAdc);
   float nCdsVolt = calculateVolt(nAdc);
 
-  if (pCdsVolt > REF_VOLT) digitalWrite(OUT_P_RELAY, HIGH);
-  else digitalWrite(OUT_P_RELAY, LOW);
+  // 1. P측 출력 및 판정 문자열 설정
+  if (pCdsVolt > REF_VOLT) {
+    digitalWrite(OUT_P_RELAY, HIGH);
+    pStatus = "[ON]";  // 조건 만족 시 ON 표시
+  } else {
+    digitalWrite(OUT_P_RELAY, LOW);
+    pStatus = "[  ]";  // 조건 미달 시 공백 표시
+  }
   
-  if (nCdsVolt > REF_VOLT) digitalWrite(OUT_N_RELAY, HIGH);
-  else digitalWrite(OUT_N_RELAY, LOW);
+  // 2. N측 출력 및 판정 문자열 설정
+  if (nCdsVolt > REF_VOLT) {
+    digitalWrite(OUT_N_RELAY, HIGH);
+    nStatus = "[ON]";  // 조건 만족 시 ON 표시
+  } else {
+    digitalWrite(OUT_N_RELAY, LOW);
+    nStatus = "[  ]";  // 조건 미달 시 공백 표시
+  }
 
-  // LCD 출력 위치 강제 지정
-  lcd.setCursor(0, 0); lcd.print("   [ PN TESTER ]    ");
-  lcd.setCursor(0, 1); lcd.print("   P-type: "); lcd.print(pCdsVolt, 2); lcd.print("V    "); 
-  lcd.setCursor(0, 2); lcd.print("   N-type: "); lcd.print(nCdsVolt, 2); lcd.print("V    "); 
-  lcd.setCursor(0, 3); lcd.print("   Set-value: "); lcd.print(REF_VOLT, 2); lcd.print("V ");
+  // 3. LCD 출력 (중앙 정렬 레이아웃 + 판정 표시 추가)
+  lcd.setCursor(0, 0); 
+  lcd.print("    [ PN TESTER ]    ");
+  
+  // P-type 출력 예시: "   P-type: 0.35V [ON] "
+  lcd.setCursor(0, 1); 
+  lcd.print("  P-ty: "); 
+  lcd.print(pCdsVolt, 2); 
+  lcd.print("V "); 
+  lcd.print(pStatus);
+  lcd.print("   "); // 잔상 제거용 공백
+  
+  // N-type 출력 예시: "   N-type: 0.12V [  ] "
+  lcd.setCursor(0, 2); 
+  lcd.print("  N-ty: "); 
+  lcd.print(nCdsVolt, 2); 
+  lcd.print("V "); 
+  lcd.print(nStatus);
+  lcd.print("   "); // 잔상 제거용 공백
+  
+  lcd.setCursor(0, 3); 
+  lcd.print("  Set-value: "); 
+  lcd.print(REF_VOLT, 2); 
+  lcd.print("V ");
 
-  Serial.print("P:"); Serial.print(pCdsVolt, 2);
-  Serial.print("V | N:"); Serial.print(nCdsVolt, 2);
-  Serial.print("V | REF:"); Serial.println(REF_VOLT);
+  // 시리얼 모니터 출력
+  Serial.print("P:"); Serial.print(pCdsVolt, 2); Serial.print("V "); Serial.print(pStatus);
+  Serial.print(" | N:"); Serial.print(nCdsVolt, 2); Serial.print("V "); Serial.print(nStatus);
+  Serial.print(" | REF:"); Serial.println(REF_VOLT);
 
   delay(300); 
 }
