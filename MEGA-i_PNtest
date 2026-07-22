@@ -9,7 +9,7 @@ const int PIN_N_CDS = 7;
 const int OUT_P_RELAY = 38; 
 const int OUT_N_RELAY = 39; 
 
-const float REF_VOLT = 0.25; 
+const float REF_VOLT = 0.35; 
 
 // 각 채널의 판정 상태를 저장할 변수 (ON일 때 "[ON]", OFF일 때 "[  ]")
 String pStatus = "[  ]";
@@ -31,7 +31,7 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print(" PN TESTER START  ");
   lcd.setCursor(0, 2);
-  lcd.print("  REF VOLT: 0.25V     ");
+  lcd.print("  REF VOLT: 0.35V     ");
   delay(2500);
   lcd.clear();
 }
