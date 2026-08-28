@@ -9,9 +9,9 @@ const int PIN_N_CDS = 7;
 const int OUT_P_RELAY = 38; 
 const int OUT_N_RELAY = 39; 
 
-const float REF_VOLT = 0.35; 
+const float REF_VOLT = 0.25; 
 
-// 각 채널의 판정 상태를 저장할 변수 (ON일 때 "[ON]", OFF일 때 "[  ]")
+// 판정 상태 문자열 변수
 String pStatus = "[  ]";
 String nStatus = "[  ]";
 
@@ -22,17 +22,16 @@ float calculateVolt(int adcValue) {
 void setup() {
   Serial.begin(9600);
   
-  // 라이브러리 기본 초기화 함수 사용
   lcd.init();         
   lcd.backlight();    
   
   lcd.setCursor(0, 0);
-  lcd.print("=== SYSTEM READY ===");
+  lcd.print("=== FA-DUINO READY ===");
   lcd.setCursor(0, 1);
-  lcd.print(" PN TESTER START  ");
+  lcd.print("   SYSTEM MONITORING   ");
   lcd.setCursor(0, 2);
-  lcd.print("  REF VOLT: 0.35V     ");
-  delay(2500);
+  lcd.print("   REF VOLT: 0.25V     ");
+  delay(2000);
   lcd.clear();
 }
 
@@ -43,46 +42,49 @@ void loop() {
   float pCdsVolt = calculateVolt(pAdc);
   float nCdsVolt = calculateVolt(nAdc);
 
-  // 1. P측 출력 및 판정 문자열 설정
+  // P측 출력 및 판정
   if (pCdsVolt > REF_VOLT) {
     digitalWrite(OUT_P_RELAY, HIGH);
-    pStatus = "[ON]";  // 조건 만족 시 ON 표시
+    pStatus = "[ON]";
   } else {
     digitalWrite(OUT_P_RELAY, LOW);
-    pStatus = "[  ]";  // 조건 미달 시 공백 표시
+    pStatus = "[  ]";
   }
   
-  // 2. N측 출력 및 판정 문자열 설정
+  // N측 출력 및 판정
   if (nCdsVolt > REF_VOLT) {
     digitalWrite(OUT_N_RELAY, HIGH);
-    nStatus = "[ON]";  // 조건 만족 시 ON 표시
+    nStatus = "[ON]";
   } else {
     digitalWrite(OUT_N_RELAY, LOW);
-    nStatus = "[  ]";  // 조건 미달 시 공백 표시
+    nStatus = "[  ]";
   }
 
-  // 3. LCD 출력 (중앙 정렬 레이아웃 + 판정 표시 추가)
+  // 1번째 줄: P-type 현재 전압 및 판정
   lcd.setCursor(0, 0); 
-  lcd.print("    [ PN TESTER ]    ");
-  
-  // P-type 출력 예시: "   P-type: 0.35V [ON] "
-  lcd.setCursor(0, 1); 
-  lcd.print("  P-ty: "); 
+  lcd.print("P-type: "); 
   lcd.print(pCdsVolt, 2); 
   lcd.print("V "); 
   lcd.print(pStatus);
-  lcd.print("   "); // 잔상 제거용 공백
-  
-  // N-type 출력 예시: "   N-type: 0.12V [  ] "
+  lcd.print("   "); // 잔상 제거용 여백
+
+  // 2번째 줄: P-set value 기준 전압
+  lcd.setCursor(0, 1); 
+  lcd.print("P-set value: "); 
+  lcd.print(REF_VOLT, 2); 
+  lcd.print("V ");
+
+  // 3번째 줄: N-type 현재 전압 및 판정
   lcd.setCursor(0, 2); 
-  lcd.print("  N-ty: "); 
+  lcd.print("N-type: "); 
   lcd.print(nCdsVolt, 2); 
   lcd.print("V "); 
   lcd.print(nStatus);
-  lcd.print("   "); // 잔상 제거용 공백
-  
+  lcd.print("   "); // 잔상 제거용 여백
+
+  // 4번째 줄: N-set value 기준 전압
   lcd.setCursor(0, 3); 
-  lcd.print("  Set-value: "); 
+  lcd.print("N-set value: "); 
   lcd.print(REF_VOLT, 2); 
   lcd.print("V ");
 
