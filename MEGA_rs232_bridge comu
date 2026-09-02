@@ -1,0 +1,108 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// 20x4 LCD 주소 설정 (보통 0x27 또는 0x3F)
+LiquidCrystal_I2C lcd(0x27, 20, 4); 
+
+String barcodeBuffer = "";  // Serial2(리더기) 수신 버퍼
+String pcBuffer = "";       // Serial(PC) 수신 버퍼
+
+void setup() {
+  // 1. 시리얼 포트 초기화
+  Serial.begin(115200);   // PC 통신용 (명령 수신 및 디버깅)
+  Serial1.begin(9600);    // RS232 (RXTX#2 전송용)
+  Serial2.begin(9600);    // 바코드 리더기 입력용
+  
+  // 2. LCD 초기화 (20x4 크기 설정)
+  lcd.init();
+  lcd.backlight();
+  
+  // 기본 레이아웃 구성
+  lcd.setCursor(0, 0);
+  lcd.print("<< Barcode scan");
+  lcd.setCursor(0, 1);
+  lcd.print("Waiting Scan...");
+  
+  lcd.setCursor(0, 2);
+  lcd.print(">> PC cmd");
+  lcd.setCursor(0, 3);
+  lcd.print("Waiting Cmd...");
+  
+  Serial.println("--- BARCODE HOLD SYSTEM ONLINE ---");
+}
+
+void loop() {
+  // ==========================================
+  // 1. Serial2 (바코드 리더기) 데이터 수신 처리
+  // ==========================================
+  while (Serial2.available()) {
+    char inChar = (char)Serial2.read();
+    
+    if (inChar == '\n' || inChar == '\r') {
+      barcodeBuffer.trim();
+      
+      if (barcodeBuffer.length() > 0) {
+        processBarcode(barcodeBuffer);
+        barcodeBuffer = "";
+      }
+    } else {
+      barcodeBuffer += inChar;
+    }
+  }
+
+  // ==========================================
+  // 2. Serial (PC) 데이터 수신 처리
+  // ==========================================
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    
+    if (inChar == '\n' || inChar == '\r') {
+      pcBuffer.trim();
+      
+      if (pcBuffer.length() > 0) {
+        updatePcDisplay(pcBuffer);
+        pcBuffer = "";
+      }
+    } else {
+      pcBuffer += inChar;
+    }
+  }
+}
+
+// [기능 1] 바코드 데이터 처리 및 LCD 2번째 줄 출력
+void processBarcode(String barcode) {
+  Serial.print("Last Scan: ");
+  Serial.println(barcode);
+  
+  // 2번째 줄 잔상 제거 및 데이터 출력 (20자 초과 시 잘라내기)
+  lcd.setCursor(0, 1);
+  lcd.print("                    "); 
+  lcd.setCursor(0, 1);
+  
+  if (barcode.length() > 20) {
+    lcd.print(barcode.substring(0, 20));
+  } else {
+    lcd.print(barcode); 
+  }
+  
+  // RXTX#2(Serial1)로 데이터 전송
+  Serial1.println(barcode); 
+  Serial.println("Forwarded to RXTX#2");
+}
+
+// [기능 2] PC 신호 수신 및 LCD 4번째 줄 출력
+void updatePcDisplay(String pcMsg) {
+  // 4번째 줄 잔상 제거 및 데이터 출력 (20자 초과 시 잘라내기)
+  lcd.setCursor(0, 3);
+  lcd.print("                    "); 
+  lcd.setCursor(0, 3);
+  
+  if (pcMsg.length() > 20) {
+    lcd.print(pcMsg.substring(0, 20));
+  } else {
+    lcd.print(pcMsg);
+  }
+
+  Serial.print("PC Command Displayed: ");
+  Serial.println(pcMsg);
+}
