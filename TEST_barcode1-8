@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Barcode Label (001~008) - A4</title>
+  <!-- Code 39 생성을 위한 JsBarcode CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+    }
+    body {
+      background-color: #fff;
+      display: flex;
+      justify-content: center;
+    }
+    .page-container {
+      width: 186mm;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3mm 8mm;
+    }
+    .label-box {
+      border: 1px dashed #bbb; /* 커팅 가이드 라인 */
+      padding: 4mm 6mm 3mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 31mm;
+      text-align: center;
+      background: #fff;
+    }
+    .top-text {
+      font-size: 15pt;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      margin-bottom: 1mm;
+    }
+    .barcode-svg {
+      width: 58mm;
+      height: 14mm;
+    }
+    .bottom-text {
+      font-size: 12pt;
+      font-weight: 500;
+      margin-top: 1mm;
+    }
+    .footer-desc {
+      font-size: 6.5pt;
+      color: #333;
+      margin-top: 1mm;
+    }
+    @media print {
+      body {
+        margin: 0;
+      }
+      .label-box {
+        border-color: #ddd;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-container" id="container"></div>
+
+<script>
+  const container = document.getElementById('container');
+
+  // 001부터 008까지 생성
+  for (let i = 1; i <= 8; i++) {
+    const numStr = String(i).padStart(3, '0');
+    
+    // CST, LOT 2열 배치
+    ['CST', 'LOT'].forEach(prefix => {
+      const code = `${prefix}-${numStr}`;
+      
+      const box = document.createElement('div');
+      box.className = 'label-box';
+      box.innerHTML = `
+        <div class="top-text">${code}</div>
+        <svg id="bc-${code}" class="barcode-svg"></svg>
+        <div class="bottom-text">${code}</div>
+        <div class="footer-desc">Code 39 start/stop included as *${code}*</div>
+      `;
+      container.appendChild(box);
+
+      // Code 39 생성 (* 시작/끝 자동 포함, 텍스트는 상하단 별도 표기)
+      JsBarcode(`#bc-${code}`, code, {
+        format: "CODE39",
+        width: 1.5,
+        height: 48,
+        displayValue: false,
+        margin: 0
+      });
+    });
+  }
+
+  // 로드 후 바로 인쇄 창 호출 (필요 시 주석 해제)
+  // window.onload = () => window.print();
+</script>
+</body>
+</html>
